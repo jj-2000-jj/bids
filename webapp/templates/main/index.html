@@ -1,0 +1,352 @@
+{% extends "layout.html" %}
+
+{% block title %}Home - SCADA RFP Finder{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="py-5 text-center">
+    <div class="container">
+        <h1 class="display-4">SCADA RFP Finder</h1>
+        <p class="lead">Find relevant SCADA opportunities across multiple states without subscription fees.</p>
+        <p class="mb-4">Specialized for water/wastewater, mining, and oil & gas industries.</p>
+        {% if not current_user.is_authenticated %}
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-4 gap-3">Get Started</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary btn-lg px-4">Login</a>
+        </div>
+        {% else %}
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            <a href="{{ url_for('rfps.index') }}" class="btn btn-primary btn-lg px-4 gap-3">View RFPs</a>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-lg px-4">My Dashboard</a>
+            <button id="run-scrapers-btn" class="btn btn-success btn-lg px-4">Start Scraping Now</button>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Scraping Status Modal -->
+<div class="modal fade" id="scrapingModal" tabindex="-1" aria-labelledby="scrapingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scrapingModalLabel">Scraping in Progress</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <p>The system is now scraping for SCADA-related RFPs across all configured sources. This process may take several minutes.</p>
+                <p>You can close this dialog and continue using the application. New RFPs will appear in your dashboard once the scraping is complete.</p>
+                <div class="alert alert-info" id="scraping-status">
+                    Starting scrapers...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 mb-4">
+                <div class="stat-card bg-white">
+                    <div class="stat-icon text-primary">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <div class="stat-value">{{ stats.total_rfps }}</div>
+                    <div class="stat-label">Total RFPs</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stat-card bg-white">
+                    <div class="stat-icon text-success">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <div class="stat-value">{{ stats.states_count }}</div>
+                    <div class="stat-label">States Covered</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stat-card bg-white">
+                    <div class="stat-icon text-info">
+                        <i class="fas fa-industry"></i>
+                    </div>
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Industries</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stat-card bg-white">
+                    <div class="stat-icon text-warning">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="stat-value">85%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent RFPs Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Recent SCADA RFPs</h2>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('rfps.index', industry='water') }}" class="btn btn-outline-primary">Water</a>
+                <a href="{{ url_for('rfps.index', industry='mining') }}" class="btn btn-outline-primary">Mining</a>
+                <a href="{{ url_for('rfps.index', industry='oil_gas') }}" class="btn btn-outline-primary">Oil & Gas</a>
+            </div>
+        </div>
+        
+        <div class="row">
+            {% if recent_rfps %}
+                {% for rfp in recent_rfps %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 {% if rfp.scada_relevance_score >= 80 %}high-relevance{% elif rfp.scada_relevance_score >= 50 %}medium-relevance{% else %}low-relevance{% endif %}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="card-title">{{ rfp.title|truncate(50) }}</h5>
+                                <span class="relevance-badge {% if rfp.scada_relevance_score >= 80 %}high{% elif rfp.scada_relevance_score >= 50 %}medium{% else %}low{% endif %}">
+                                    {{ rfp.scada_relevance_score }}%
+                                </span>
+                            </div>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ rfp.state }}, {{ rfp.agency|truncate(30) }}</h6>
+                            <p class="card-text">{{ rfp.description|truncate(100) }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">
+                                        Due: 
+                                        {% if rfp.due_date %}
+                                            <span class="{% if rfp.days_until_due < 7 %}due-soon{% endif %}">
+                                                {{ rfp.due_date.strftime('%m/%d/%Y') }}
+                                                {% if rfp.days_until_due > 0 %}
+                                                    ({{ rfp.days_until_due }} days)
+                                                {% elif rfp.days_until_due == 0 %}
+                                                    (Today)
+                                                {% else %}
+                                                    (Expired)
+                                                {% endif %}
+                                            </span>
+                                        {% else %}
+                                            Not specified
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div>
+                                    {% if rfp.id in favorites %}
+                                    <i class="fas fa-star favorite-btn active" data-rfp-id="{{ rfp.id }}"></i>
+                                    {% else %}
+                                    <i class="far fa-star favorite-btn" data-rfp-id="{{ rfp.id }}"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{{ url_for('rfps.detail', rfp_id=rfp.id) }}" class="btn btn-sm btn-primary">View Details</a>
+                            {% if rfp.is_water_wastewater %}
+                            <span class="badge bg-info">Water</span>
+                            {% endif %}
+                            {% if rfp.is_mining %}
+                            <span class="badge bg-secondary">Mining</span>
+                            {% endif %}
+                            {% if rfp.is_oil_gas %}
+                            <span class="badge bg-warning text-dark">Oil & Gas</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        No recent RFPs found. Check back soon or adjust your search criteria.
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{{ url_for('rfps.index') }}" class="btn btn-lg btn-outline-primary">View All RFPs</a>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">Key Features</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-search fa-3x text-primary"></i>
+                        </div>
+                        <h3 class="card-title h5">Smart Filtering</h3>
+                        <p class="card-text">Advanced filtering by state, industry, and relevance score to find exactly what you need.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-bell fa-3x text-primary"></i>
+                        </div>
+                        <h3 class="card-title h5">Custom Notifications</h3>
+                        <p class="card-text">Get notified about new opportunities that match your specific interests and requirements.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-robot fa-3x text-primary"></i>
+                        </div>
+                        <h3 class="card-title h5">Automated Scraping</h3>
+                        <p class="card-text">Automatic collection of RFPs from multiple state procurement websites, updated daily.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Industry Focus Section -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Industry Focus</h2>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <img src="https://images.unsplash.com/photo-1606857521015-7f9fcf423740?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" class="card-img-top" alt="Water Treatment Plant">
+                    <div class="card-body">
+                        <h3 class="card-title h5">Water & Wastewater</h3>
+                        <p class="card-text">SCADA systems for water treatment plants, distribution networks, and wastewater facilities.</p>
+                        <p><strong>RFPs Available:</strong> {{ stats.water_count }}</p>
+                        <a href="{{ url_for('rfps.index', industry='water') }}" class="btn btn-outline-primary">View Water RFPs</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <img src="https://images.unsplash.com/photo-1578319439584-104c94d37305?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" class="card-img-top" alt="Mining Operation">
+                    <div class="card-body">
+                        <h3 class="card-title h5">Mining</h3>
+                        <p class="card-text">Control systems for mining operations, equipment monitoring, and safety systems.</p>
+                        <p><strong>RFPs Available:</strong> {{ stats.mining_count }}</p>
+                        <a href="{{ url_for('rfps.index', industry='mining') }}" class="btn btn-outline-primary">View Mining RFPs</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <img src="https://images.unsplash.com/photo-1586953208448-b95a79798f07?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" class="card-img-top" alt="Oil and Gas Facility">
+                    <div class="card-body">
+                        <h3 class="card-title h5">Oil & Gas</h3>
+                        <p class="card-text">SCADA solutions for pipeline monitoring, production facilities, and distribution networks.</p>
+                        <p><strong>RFPs Available:</strong> {{ stats.oil_gas_count }}</p>
+                        <a href="{{ url_for('rfps.index', industry='oil_gas') }}" class="btn btn-outline-primary">View Oil & Gas RFPs</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Handle favorite toggling
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const rfpId = this.getAttribute('data-rfp-id');
+            
+            fetch(`/rfps/${rfpId}/favorite`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_favorite) {
+                    this.classList.remove('far');
+                    this.classList.add('fas', 'active');
+                } else {
+                    this.classList.remove('fas', 'active');
+                    this.classList.add('far');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+
+    // Handle scraper button
+    document.addEventListener('DOMContentLoaded', function() {
+        const scraperBtn = document.getElementById('run-scrapers-btn');
+        if (scraperBtn) {
+            scraperBtn.addEventListener('click', function() {
+                // Show the modal
+                const scrapingModal = new bootstrap.Modal(document.getElementById('scrapingModal'));
+                scrapingModal.show();
+                
+                // Update status
+                const statusElement = document.getElementById('scraping-status');
+                statusElement.textContent = 'Starting scrapers...';
+                
+                // Call the API to run scrapers
+                fetch('/api/scraper/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        statusElement.textContent = 'Scrapers are running. This may take several minutes.';
+                        
+                        // Poll for status updates
+                        const checkStatus = setInterval(function() {
+                            fetch('/api/scraper/status')
+                                .then(response => response.json())
+                                .then(statusData => {
+                                    if (statusData.is_running) {
+                                        statusElement.textContent = `Scrapers are running. Found ${statusData.rfps_found} RFPs so far.`;
+                                    } else {
+                                        clearInterval(checkStatus);
+                                        statusElement.textContent = `Scraping completed! Found ${statusData.rfps_found} new SCADA-related RFPs.`;
+                                        statusElement.className = 'alert alert-success';
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error checking status:', error);
+                                    clearInterval(checkStatus);
+                                });
+                        }, 5000); // Check every 5 seconds
+                    } else {
+                        statusElement.textContent = 'Error starting scrapers: ' + (data.message || 'Unknown error');
+                        statusElement.className = 'alert alert-danger';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    statusElement.textContent = 'Error starting scrapers. Please try again later.';
+                    statusElement.className = 'alert alert-danger';
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

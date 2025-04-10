@@ -1,0 +1,129 @@
+{% extends "layout.html" %}
+
+{% block title %}Admin - Scrapers{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Scraper Management</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Run Scrapers</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('scraper.admin_run_scrapers') }}">
+                        <div class="mb-3">
+                            <label for="state_code" class="form-label">Select State</label>
+                            <select class="form-select" id="state_code" name="state_code">
+                                <option value="all">All Enabled States</option>
+                                {% for state in states %}
+                                <option value="{{ state.code }}">{{ state.name }} ({{ state.code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Run Scrapers</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">State Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>State</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for state in states %}
+                                <tr>
+                                    <td>{{ state.name }} ({{ state.code }})</td>
+                                    <td>
+                                        {% if state.enabled %}
+                                        <span class="badge bg-success">Enabled</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('admin.toggle_scraper', state_code=state.code) }}" class="btn btn-sm {% if state.enabled %}btn-danger{% else %}btn-success{% endif %}">
+                                            {% if state.enabled %}Disable{% else %}Enable{% endif %}
+                                        </a>
+                                        <a href="{{ url_for('scraper.run_state_scraper_route', state_code=state.code) }}" class="btn btn-sm btn-primary">Run</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Recent Scraper Logs</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>State</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                            <th>RFPs Found</th>
+                            <th>Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.state }}</td>
+                            <td>{{ log.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>{{ log.end_time.strftime('%Y-%m-%d %H:%M:%S') if log.end_time else 'Running...' }}</td>
+                            <td>{{ log.duration if log.end_time else 'N/A' }}</td>
+                            <td>
+                                {% if log.end_time %}
+                                    {% if log.success %}
+                                    <span class="badge bg-success">Success</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Failed</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="badge bg-warning text-dark">Running</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ log.rfps_found }}</td>
+                            <td>{{ log.error_message }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-refresh the page every 30 seconds to update running status
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}

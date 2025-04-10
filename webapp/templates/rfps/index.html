@@ -1,0 +1,261 @@
+{% extends "layout.html" %}
+
+{% block title %}RFP Listings - SCADA RFP Finder{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>SCADA RFPs</h1>
+        <div>
+            <a href="{{ url_for('rfps.export', **current_filters) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-download me-1"></i> Export CSV
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card mb-4 filter-section">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('rfps.index') }}" id="filter-form">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="state" class="form-label">State</label>
+                        <select name="state" id="state" class="form-select">
+                            <option value="">All States</option>
+                            {% for state in states %}
+                                <option value="{{ state }}" {% if current_filters.state == state %}selected{% endif %}>{{ state }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="industry" class="form-label">Industry</label>
+                        <select name="industry" id="industry" class="form-select">
+                            <option value="">All Industries</option>
+                            <option value="water" {% if current_filters.industry == 'water' %}selected{% endif %}>Water/Wastewater</option>
+                            <option value="mining" {% if current_filters.industry == 'mining' %}selected{% endif %}>Mining</option>
+                            <option value="oil_gas" {% if current_filters.industry == 'oil_gas' %}selected{% endif %}>Oil & Gas</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="min_score" class="form-label">Min. Relevance</label>
+                        <div class="input-group">
+                            <input type="range" class="form-range" id="min_score_range" min="0" max="100" step="5" value="{{ current_filters.min_score }}">
+                            <input type="number" class="form-control" id="min_score" name="min_score" min="0" max="100" value="{{ current_filters.min_score }}">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="sort" class="form-label">Sort By</label>
+                        <select name="sort" id="sort" class="form-select">
+                            <option value="relevance" {% if current_filters.sort == 'relevance' %}selected{% endif %}>Relevance</option>
+                            <option value="due_date" {% if current_filters.sort == 'due_date' %}selected{% endif %}>Due Date</option>
+                            <option value="publication_date" {% if current_filters.sort == 'publication_date' %}selected{% endif %}>Publication Date</option>
+                            <option value="state" {% if current_filters.sort == 'state' %}selected{% endif %}>State</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-9">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Search RFPs..." name="q" value="{{ current_filters.q }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <a href="{{ url_for('rfps.index') }}" class="btn btn-outline-secondary">Reset Filters</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- RFP Listings -->
+    <div class="card">
+        <div class="card-body">
+            {% if rfps.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>State</th>
+                                <th>Agency</th>
+                                <th>Due Date</th>
+                                <th>Relevance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rfp in rfps.items %}
+                                <tr class="rfp-list-item">
+                                    <td>
+                                        <a href="{{ url_for('rfps.detail', rfp_id=rfp.id) }}" class="rfp-title">
+                                            {{ rfp.title|truncate(70) }}
+                                        </a>
+                                        <div class="rfp-meta">
+                                            {% if rfp.is_water_wastewater %}
+                                                <span class="badge bg-info">Water</span>
+                                            {% endif %}
+                                            {% if rfp.is_mining %}
+                                                <span class="badge bg-secondary">Mining</span>
+                                            {% endif %}
+                                            {% if rfp.is_oil_gas %}
+                                                <span class="badge bg-warning text-dark">Oil & Gas</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>{{ rfp.state }}</td>
+                                    <td>{{ rfp.agency|truncate(30) }}</td>
+                                    <td class="due-date {% if rfp.days_until_due is not none and rfp.days_until_due < 7 %}due-soon{% endif %}">
+                                        {% if rfp.due_date %}
+                                            {{ rfp.due_date.strftime('%m/%d/%Y') }}
+                                            {% if rfp.days_until_due is not none %}
+                                                {% if rfp.days_until_due > 0 %}
+                                                    <small>({{ rfp.days_until_due }} days)</small>
+                                                {% elif rfp.days_until_due == 0 %}
+                                                    <small>(Today)</small>
+                                                {% else %}
+                                                    <small>(Expired)</small>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% else %}
+                                            Not specified
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar 
+                                                {% if rfp.scada_relevance_score >= 80 %}bg-success
+                                                {% elif rfp.scada_relevance_score >= 50 %}bg-warning
+                                                {% else %}bg-danger{% endif %}" 
+                                                role="progressbar" 
+                                                style="width: {{ rfp.scada_relevance_score }}%;" 
+                                                aria-valuenow="{{ rfp.scada_relevance_score }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {{ rfp.scada_relevance_score }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('rfps.detail', rfp_id=rfp.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if rfp.id in favorites %}
+                                                <button class="btn btn-sm btn-outline-warning favorite-btn active" data-rfp-id="{{ rfp.id }}">
+                                                    <i class="fas fa-star"></i>
+                                                </button>
+                                            {% else %}
+                                                <button class="btn btn-sm btn-outline-secondary favorite-btn" data-rfp-id="{{ rfp.id }}">
+                                                    <i class="far fa-star"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <nav aria-label="RFP pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if rfps.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('rfps.index', page=rfps.prev_num, **current_filters) }}">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fas fa-chevron-left"></i> Previous</span>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in rfps.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == rfps.page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('rfps.index', page=page_num, **current_filters) }}">{{ page_num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if rfps.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('rfps.index', page=rfps.next_num, **current_filters) }}">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next <i class="fas fa-chevron-right"></i></span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> No RFPs found matching your criteria. Try adjusting your filters.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Sync range and number input for min_score
+    document.getElementById('min_score_range').addEventListener('input', function() {
+        document.getElementById('min_score').value = this.value;
+    });
+    
+    document.getElementById('min_score').addEventListener('input', function() {
+        document.getElementById('min_score_range').value = this.value;
+    });
+    
+    // Handle favorite toggling
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const rfpId = this.getAttribute('data-rfp-id');
+            
+            fetch(`/rfps/${rfpId}/favorite`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_favorite) {
+                    this.classList.remove('btn-outline-secondary');
+                    this.classList.add('btn-outline-warning', 'active');
+                    this.querySelector('i').classList.remove('far');
+                    this.querySelector('i').classList.add('fas');
+                } else {
+                    this.classList.remove('btn-outline-warning', 'active');
+                    this.classList.add('btn-outline-secondary');
+                    this.querySelector('i').classList.remove('fas');
+                    this.querySelector('i').classList.add('far');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+</script>
+{% endblock %}

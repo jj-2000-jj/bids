@@ -1,0 +1,111 @@
+{% extends "layout.html" %}
+
+{% block title %}Notification Preferences - SCADA RFP Finder{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Notification Preferences</h1>
+        <div>
+            <a href="{{ url_for('notifications.index') }}" class="btn btn-outline-primary">
+                <i class="fas fa-bell me-1"></i> View Notifications
+            </a>
+            <button id="test-notification" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-paper-plane me-1"></i> Send Test
+            </button>
+        </div>
+    </div>
+    
+    <!-- Preferences Form -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Customize Your Notifications</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('notifications.preferences') }}">
+                <!-- General Settings -->
+                <div class="mb-4">
+                    <h5>General Settings</h5>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="notification_enabled" name="notification_enabled" {% if current_user.notification_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="notification_enabled">Enable Notifications</label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notification_frequency" class="form-label">Notification Frequency</label>
+                        <select class="form-select" id="notification_frequency" name="notification_frequency">
+                            <option value="immediate" {% if current_user.notification_frequency == 'immediate' %}selected{% endif %}>Immediate</option>
+                            <option value="daily" {% if current_user.notification_frequency == 'daily' %}selected{% endif %}>Daily Digest</option>
+                            <option value="weekly" {% if current_user.notification_frequency == 'weekly' %}selected{% endif %}>Weekly Digest</option>
+                        </select>
+                        <div class="form-text">How often you want to receive notifications about new RFPs.</div>
+                    </div>
+                </div>
+                
+                <!-- Relevance Settings -->
+                <div class="mb-4">
+                    <h5>Relevance Settings</h5>
+                    <div class="mb-3">
+                        <label for="min_relevance_score" class="form-label">Minimum Relevance Score: <span id="relevance_value">{{ current_user.min_relevance_score }}</span>%</label>
+                        <input type="range" class="form-range" min="0" max="100" step="5" id="min_relevance_score" name="min_relevance_score" value="{{ current_user.min_relevance_score }}">
+                        <div class="form-text">Only notify me about RFPs with at least this relevance score.</div>
+                    </div>
+                </div>
+                
+                <!-- Industry Settings -->
+                <div class="mb-4">
+                    <h5>Industry Settings</h5>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="water_wastewater_enabled" name="water_wastewater_enabled" {% if current_user.water_wastewater_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="water_wastewater_enabled">
+                            <span class="badge bg-info me-2">Water</span> Water & Wastewater SCADA
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="mining_enabled" name="mining_enabled" {% if current_user.mining_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="mining_enabled">
+                            <span class="badge bg-secondary me-2">Mining</span> Mining SCADA
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="oil_gas_enabled" name="oil_gas_enabled" {% if current_user.oil_gas_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="oil_gas_enabled">
+                            <span class="badge bg-warning text-dark me-2">Oil & Gas</span> Oil & Gas SCADA
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">Save Preferences</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Update relevance score display
+    document.getElementById('min_relevance_score').addEventListener('input', function() {
+        document.getElementById('relevance_value').textContent = this.value;
+    });
+    
+    // Send test notification
+    document.getElementById('test-notification').addEventListener('click', function() {
+        fetch("{{ url_for('notifications.send_test') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.href = "{{ url_for('notifications.index') }}";
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+</script>
+{% endblock %}

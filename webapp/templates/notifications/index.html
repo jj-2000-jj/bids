@@ -1,0 +1,137 @@
+{% extends "layout.html" %}
+
+{% block title %}Notifications - SCADA RFP Finder{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Notifications</h1>
+        <div>
+            <a href="{{ url_for('notifications.preferences') }}" class="btn btn-outline-primary">
+                <i class="fas fa-cog me-1"></i> Preferences
+            </a>
+            <button id="mark-all-read" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-check-double me-1"></i> Mark All Read
+            </button>
+        </div>
+    </div>
+    
+    <!-- Notifications List -->
+    <div class="card">
+        <div class="card-body">
+            {% if notifications.items %}
+                <div class="list-group">
+                    {% for notification in notifications.items %}
+                        <div class="list-group-item list-group-item-action {% if not notification.read %}bg-light{% endif %}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">
+                                    {% if not notification.read %}
+                                        <span class="badge bg-primary me-2">New</span>
+                                    {% endif %}
+                                    {{ notification.rfp.title|truncate(70) }}
+                                </h5>
+                                <small class="text-muted">{{ notification.sent_at.strftime('%m/%d/%Y %H:%M') }}</small>
+                            </div>
+                            <p class="mb-1">{{ notification.rfp.description|truncate(150) }}</p>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div>
+                                    <span class="badge {% if notification.rfp.scada_relevance_score >= 80 %}bg-success{% elif notification.rfp.scada_relevance_score >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ notification.rfp.scada_relevance_score }}% Relevance
+                                    </span>
+                                    <span class="badge bg-primary">{{ notification.rfp.state }}</span>
+                                    {% if notification.rfp.is_water_wastewater %}
+                                        <span class="badge bg-info">Water</span>
+                                    {% endif %}
+                                    {% if notification.rfp.is_mining %}
+                                        <span class="badge bg-secondary">Mining</span>
+                                    {% endif %}
+                                    {% if notification.rfp.is_oil_gas %}
+                                        <span class="badge bg-warning text-dark">Oil & Gas</span>
+                                    {% endif %}
+                                </div>
+                                <a href="{{ url_for('rfps.detail', rfp_id=notification.rfp.id) }}" class="btn btn-sm btn-primary">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                <nav aria-label="Notification pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if notifications.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('notifications.index', page=notifications.prev_num) }}">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fas fa-chevron-left"></i> Previous</span>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in notifications.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == notifications.page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('notifications.index', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if notifications.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('notifications.index', page=notifications.next_num) }}">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next <i class="fas fa-chevron-right"></i></span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> You don't have any notifications yet. When new RFPs matching your preferences are found, they will appear here.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Mark all notifications as read
+    document.getElementById('mark-all-read').addEventListener('click', function() {
+        fetch("{{ url_for('notifications.mark_all_read') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Refresh the page to show updated status
+                window.location.reload();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+</script>
+{% endblock %}

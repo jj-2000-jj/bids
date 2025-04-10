@@ -1,0 +1,181 @@
+/* Custom styles for SCADA RFP Finder */
+
+/* Color variables */
+:root {
+  --primary: #2c3e50;
+  --secondary: #3498db;
+  --accent: #e74c3c;
+  --success: #27ae60;
+  --warning: #f39c12;
+  --danger: #c0392b;
+  --light-bg: #f5f5f5;
+  --dark-text: #333333;
+}
+
+/* General styles */
+body {
+  font-family: 'Open Sans', sans-serif;
+  background-color: var(--light-bg);
+  color: var(--dark-text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Navbar customization */
+.navbar-dark.bg-primary {
+  background-color: var(--primary) !important;
+}
+
+/* Card customization */
+.card {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* RFP relevance indicators */
+.high-relevance {
+  border-left: 5px solid var(--success);
+}
+
+.medium-relevance {
+  border-left: 5px solid var(--warning);
+}
+
+.low-relevance {
+  border-left: 5px solid var(--danger);
+}
+
+.relevance-badge {
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.relevance-badge.high {
+  background-color: var(--success);
+  color: white;
+}
+
+.relevance-badge.medium {
+  background-color: var(--warning);
+  color: white;
+}
+
+.relevance-badge.low {
+  background-color: var(--danger);
+  color: white;
+}
+
+/* Dashboard stats */
+.stat-card {
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+}
+
+.stat-card .stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.stat-card .stat-value {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.stat-card .stat-label {
+  font-size: 1rem;
+  color: #6c757d;
+}
+
+/* RFP listing */
+.rfp-list-item {
+  transition: all 0.2s ease;
+}
+
+.rfp-list-item:hover {
+  background-color: rgba(52, 152, 219, 0.05);
+}
+
+.rfp-title {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.rfp-meta {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.due-date {
+  font-weight: bold;
+}
+
+.due-soon {
+  color: var(--danger);
+}
+
+/* Favorite button */
+.favorite-btn {
+  color: #ccc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.favorite-btn:hover, .favorite-btn.active {
+  color: #f1c40f;
+}
+
+/* Search and filters */
+.filter-section {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Admin dashboard */
+.admin-card {
+  margin-bottom: 1.5rem;
+}
+
+.admin-card .card-header {
+  background-color: var(--primary);
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stat-card {
+    margin-bottom: 1rem;
+  }
+  
+  .relevance-badge {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

@@ -1,0 +1,325 @@
+{% extends "layout.html" %}
+
+{% block title %}RFP Details - {{ rfp.title }} - SCADA RFP Finder{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('rfps.index') }}">RFPs</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ rfp.title|truncate(30) }}</li>
+        </ol>
+    </nav>
+    
+    <!-- RFP Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h1 class="mb-2">{{ rfp.title }}</h1>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-primary me-2">{{ rfp.state }}</span>
+                {% if rfp.is_water_wastewater %}
+                    <span class="badge bg-info me-2">Water/Wastewater</span>
+                {% endif %}
+                {% if rfp.is_mining %}
+                    <span class="badge bg-secondary me-2">Mining</span>
+                {% endif %}
+                {% if rfp.is_oil_gas %}
+                    <span class="badge bg-warning text-dark me-2">Oil & Gas</span>
+                {% endif %}
+                <span class="text-muted">ID: {{ rfp.id }}</span>
+            </div>
+        </div>
+        <div class="d-flex">
+            {% if rfp.id in favorites %}
+                <button class="btn btn-warning me-2 favorite-btn active" data-rfp-id="{{ rfp.id }}">
+                    <i class="fas fa-star me-1"></i> Favorited
+                </button>
+            {% else %}
+                <button class="btn btn-outline-secondary me-2 favorite-btn" data-rfp-id="{{ rfp.id }}">
+                    <i class="far fa-star me-1"></i> Add to Favorites
+                </button>
+            {% endif %}
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="actionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown">
+                    <li><a class="dropdown-item" href="{{ url_for('rfps.export_single', rfp_id=rfp.id) }}"><i class="fas fa-file-csv me-2"></i>Export as CSV</a></li>
+                    <li><a class="dropdown-item" href="{{ rfp.url }}" target="_blank"><i class="fas fa-external-link-alt me-2"></i>View Original</a></li>
+                    {% if current_user.is_admin %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.edit_rfp', rfp_id=rfp.id) }}"><i class="fas fa-edit me-2"></i>Edit RFP</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- RFP Content -->
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Description</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ rfp.description|nl2br }}</p>
+                </div>
+            </div>
+            
+            {% if rfp.requirements %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Requirements</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ rfp.requirements|nl2br }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if rfp.attachments %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Attachments</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for attachment in rfp.attachments %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ attachment.filename }}</span>
+                            <a href="{{ attachment.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="fas fa-download me-1"></i> Download
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Relevance Score -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">SCADA Relevance</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="position-relative d-inline-block">
+                        <canvas id="relevanceChart" width="200" height="200"></canvas>
+                        <div class="position-absolute top-50 start-50 translate-middle">
+                            <h2 class="mb-0">{{ rfp.scada_relevance_score }}%</h2>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        {% if rfp.scada_relevance_score >= 80 %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i> High relevance to SCADA systems
+                            </div>
+                        {% elif rfp.scada_relevance_score >= 50 %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-info-circle me-2"></i> Medium relevance to SCADA systems
+                            </div>
+                        {% else %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle me-2"></i> Low relevance to SCADA systems
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Key Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Key Details</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-building me-2"></i> Agency</span>
+                            <span class="text-end fw-bold">{{ rfp.agency }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-calendar-alt me-2"></i> Publication Date</span>
+                            <span class="text-end fw-bold">
+                                {% if rfp.publication_date %}
+                                    {{ rfp.publication_date.strftime('%m/%d/%Y') }}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-calendar-check me-2"></i> Due Date</span>
+                            <span class="text-end fw-bold {% if rfp.days_until_due is not none and rfp.days_until_due < 7 %}text-danger{% endif %}">
+                                {% if rfp.due_date %}
+                                    {{ rfp.due_date.strftime('%m/%d/%Y') }}
+                                    {% if rfp.days_until_due is not none %}
+                                        {% if rfp.days_until_due > 0 %}
+                                            ({{ rfp.days_until_due }} days)
+                                        {% elif rfp.days_until_due == 0 %}
+                                            (Today)
+                                        {% else %}
+                                            (Expired)
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-map-marker-alt me-2"></i> State</span>
+                            <span class="text-end fw-bold">{{ rfp.state }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-clock me-2"></i> Added</span>
+                            <span class="text-end fw-bold">{{ rfp.created_at.strftime('%m/%d/%Y') }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            {% if rfp.contact_name or rfp.contact_email or rfp.contact_phone %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Contact Information</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% if rfp.contact_name %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-user me-2"></i> Name</span>
+                            <span class="text-end fw-bold">{{ rfp.contact_name }}</span>
+                        </li>
+                        {% endif %}
+                        {% if rfp.contact_email %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-envelope me-2"></i> Email</span>
+                            <span class="text-end fw-bold">
+                                <a href="mailto:{{ rfp.contact_email }}">{{ rfp.contact_email }}</a>
+                            </span>
+                        </li>
+                        {% endif %}
+                        {% if rfp.contact_phone %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-phone me-2"></i> Phone</span>
+                            <span class="text-end fw-bold">
+                                <a href="tel:{{ rfp.contact_phone }}">{{ rfp.contact_phone }}</a>
+                            </span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Similar RFPs -->
+            {% if similar_rfps %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Similar RFPs</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for similar in similar_rfps %}
+                        <li class="list-group-item">
+                            <a href="{{ url_for('rfps.detail', rfp_id=similar.id) }}" class="text-decoration-none">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">{{ similar.title|truncate(50) }}</div>
+                                        <div class="small text-muted">{{ similar.state }} - {{ similar.agency|truncate(30) }}</div>
+                                    </div>
+                                    <span class="badge {% if similar.scada_relevance_score >= 80 %}bg-success{% elif similar.scada_relevance_score >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ similar.scada_relevance_score }}%
+                                    </span>
+                                </div>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Relevance chart
+    const ctx = document.getElementById('relevanceChart').getContext('2d');
+    const score = {{ rfp.scada_relevance_score }};
+    const remaining = 100 - score;
+    
+    let color;
+    if (score >= 80) {
+        color = '#27ae60'; // success
+    } else if (score >= 50) {
+        color = '#f39c12'; // warning
+    } else {
+        color = '#c0392b'; // danger
+    }
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [score, remaining],
+                backgroundColor: [
+                    color,
+                    '#e9ecef'
+                ],
+                borderWidth: 0,
+                cutout: '75%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: false
+                }
+            }
+        }
+    });
+    
+    // Handle favorite toggling
+    document.querySelector('.favorite-btn').addEventListener('click', function() {
+        const rfpId = this.getAttribute('data-rfp-id');
+        
+        fetch(`/rfps/${rfpId}/favorite`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.is_favorite) {
+                this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-warning', 'active');
+                this.innerHTML = '<i class="fas fa-star me-1"></i> Favorited';
+            } else {
+                this.classList.remove('btn-warning', 'active');
+                this.classList.add('btn-outline-secondary');
+                this.innerHTML = '<i class="far fa-star me-1"></i> Add to Favorites';
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+</script>
+{% endblock %}

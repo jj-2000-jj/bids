@@ -1,0 +1,285 @@
+{% extends "layout.html" %}
+
+{% block title %}Admin Dashboard - SCADA RFP Finder{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin.index' %}active{% endif %}" href="{{ url_for('admin.index') }}">
+                            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin.users' %}active{% endif %}" href="{{ url_for('admin.users') }}">
+                            <i class="fas fa-users me-2"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin.rfps' %}active{% endif %}" href="{{ url_for('admin.rfps') }}">
+                            <i class="fas fa-file-contract me-2"></i> RFPs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin.scrapers' %}active{% endif %}" href="{{ url_for('admin.scrapers') }}">
+                            <i class="fas fa-spider me-2"></i> Scrapers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin.config' %}active{% endif %}" href="{{ url_for('admin.config') }}">
+                            <i class="fas fa-cogs me-2"></i> Configuration
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin.logs' %}active{% endif %}" href="{{ url_for('admin.logs') }}">
+                            <i class="fas fa-list-alt me-2"></i> Logs
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Admin Dashboard</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-home me-1"></i> Back to Site
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i> Total RFPs</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h2 class="display-4">{{ stats.total_rfps }}</h2>
+                            <p class="text-muted">Across all states</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-users me-2"></i> Users</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h2 class="display-4">{{ stats.total_users }}</h2>
+                            <p class="text-muted">Registered accounts</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i> States</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h2 class="display-4">{{ stats.states_covered }}</h2>
+                            <p class="text-muted">States with RFPs</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i> High Relevance</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h2 class="display-4">{{ stats.high_relevance_rfps }}</h2>
+                            <p class="text-muted">RFPs with 80%+ relevance</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="row mb-4">
+                <div class="col-md-6 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i> RFPs by State</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="stateChart" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i> RFPs by Relevance</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="relevanceChart" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Industry Stats -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-water me-2"></i> Water/Wastewater</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h2 class="display-4">{{ stats.water_rfps }}</h2>
+                            <p class="text-muted">RFPs in this industry</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="fas fa-hard-hat me-2"></i> Mining</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h2 class="display-4">{{ stats.mining_rfps }}</h2>
+                            <p class="text-muted">RFPs in this industry</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header bg-warning">
+                            <h5 class="mb-0"><i class="fas fa-oil-can me-2"></i> Oil & Gas</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h2 class="display-4">{{ stats.oil_gas_rfps }}</h2>
+                            <p class="text-muted">RFPs in this industry</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Logs -->
+            <div class="card admin-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i> Recent Scraper Logs</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>State</th>
+                                    <th>Start Time</th>
+                                    <th>Duration</th>
+                                    <th>RFPs Found</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in recent_logs %}
+                                <tr>
+                                    <td>{{ log.state }}</td>
+                                    <td>{{ log.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>{{ log.duration }} seconds</td>
+                                    <td>{{ log.rfps_found }}</td>
+                                    <td>
+                                        {% if log.success %}
+                                            <span class="badge bg-success">Success</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer text-end">
+                    <a href="{{ url_for('admin.logs') }}" class="btn btn-sm btn-outline-primary">View All Logs</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // State chart
+    const stateData = {{ state_data|safe }};
+    const stateCtx = document.getElementById('stateChart').getContext('2d');
+    
+    new Chart(stateCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(stateData),
+            datasets: [{
+                label: 'RFPs by State',
+                data: Object.values(stateData),
+                backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                borderColor: 'rgba(52, 152, 219, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+    
+    // Relevance chart
+    const relevanceData = {{ relevance_counts|safe }};
+    const relevanceCtx = document.getElementById('relevanceChart').getContext('2d');
+    
+    new Chart(relevanceCtx, {
+        type: 'pie',
+        data: {
+            labels: relevanceData.map(item => item.label),
+            datasets: [{
+                data: relevanceData.map(item => item.count),
+                backgroundColor: [
+                    'rgba(192, 57, 43, 0.7)',  // Very Low
+                    'rgba(230, 126, 34, 0.7)', // Low
+                    'rgba(241, 196, 15, 0.7)', // Medium
+                    'rgba(46, 204, 113, 0.7)', // High
+                    'rgba(39, 174, 96, 0.7)'   // Very High
+                ],
+                borderColor: [
+                    'rgba(192, 57, 43, 1)',
+                    'rgba(230, 126, 34, 1)',
+                    'rgba(241, 196, 15, 1)',
+                    'rgba(46, 204, 113, 1)',
+                    'rgba(39, 174, 96, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
