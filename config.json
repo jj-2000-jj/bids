@@ -1,0 +1,50 @@
+"""
+SCADA RFP Finder - Configuration File
+
+This is a sample configuration file for the SCADA RFP Finder application.
+Edit the values below to customize the application behavior.
+"""
+
+{
+    "email": {
+        "smtp_server": "smtp.gmail.com",
+        "smtp_port": 587,
+        "smtp_username": "your-email@gmail.com",
+        "smtp_password": "your-app-password",
+        "from_email": "your-email@gmail.com",
+        "from_name": "SCADA RFP Finder",
+        "recipients": ["recipient@example.com"]
+    },
+    "notification": {
+        "min_relevance_score": 50,
+        "notification_frequency": "daily",
+        "include_low_relevance": false
+    },
+    "scraping": {
+        "states": ["AZ", "NM", "UT", "ID", "IL", "MO", "IA", "IN"],
+        "frequency": "daily",
+        "output_dir": "rfp_documents"
+    },
+    "filtering": {
+        "industry_focus": {
+            "water_wastewater": true,
+            "mining": true,
+            "oil_gas": true
+        },
+        "keyword_weights": {
+            "core_scada": 10,
+            "water_wastewater": 5,
+            "mining": 5,
+            "oil_gas": 5,
+            "communication": 3,
+            "integration": 3,
+            "project_types": 2,
+            "service_types": 2
+        }
+        {
+          "DATABASE_URI": "sqlite:///instance/rfp_finder.db",
+          "SECRET_KEY": "1dg45n78u12m4m6p",
+          "DEBUG": true
+        }
+    }
+}

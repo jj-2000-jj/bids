@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - SECRET_KEY=change_this_in_production
+      - DATABASE_URL=sqlite:///data/rfp_finder.db
+    restart: always
+    
+  # Uncomment to add a database service if needed
+  # db:
+  #   image: postgres:14
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_PASSWORD=password
+  #     - POSTGRES_USER=rfpfinder
+  #     - POSTGRES_DB=rfpfinder
+  #   restart: always
+
+volumes:
+  data:
+  # postgres_data:

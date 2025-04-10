@@ -1,0 +1,30 @@
+2025-04-03 23:21:28,713 - rfp_scraper - INFO - Database initialized successfully
+2025-04-03 23:21:28,713 - rfp_scraper - INFO - RFP Scraper Framework initialized with database at test_run_20250403_232128/test_rfps.db
+2025-04-03 23:21:28,713 - rfp_scraper - INFO - RFP documents will be stored in test_run_20250403_232128/rfp_documents
+2025-04-03 23:21:28,713 - rfp_scraper - INFO - Registered scraper for AZ
+2025-04-03 23:21:28,713 - rfp_scraper - INFO - Registered scraper for NM
+2025-04-03 23:21:28,713 - scada_rfp_finder - INFO - Running scraper for AZ
+2025-04-03 23:21:28,714 - rfp_scraper - INFO - Running scraper for AZ
+2025-04-03 23:21:28,714 - rfp_scraper.arizona - INFO - Starting scrape of Arizona procurement website
+2025-04-03 23:21:28,883 - rfp_scraper.arizona - WARNING - Could not find RFP table on Arizona procurement website
+2025-04-03 23:21:28,883 - rfp_scraper - INFO - Scraper for AZ found 0 new RFPs
+2025-04-03 23:21:28,884 - rfp_scraper - INFO - Database connection closed
+2025-04-03 23:21:29,298 - rfp_scraper - INFO - Database initialized successfully
+2025-04-03 23:21:29,298 - rfp_scraper - INFO - RFP Scraper Framework initialized with database at test_run_20250403_232128/test_rfps.db
+2025-04-03 23:21:29,298 - rfp_scraper - INFO - RFP documents will be stored in test_run_20250403_232128/rfp_documents
+2025-04-03 23:21:29,298 - rfp_scraper - INFO - Registered scraper for AZ
+2025-04-03 23:21:29,298 - rfp_scraper - INFO - Registered scraper for NM
+2025-04-03 23:21:29,298 - scada_rfp_finder - INFO - Running scraper for NM
+2025-04-03 23:21:29,299 - rfp_scraper - INFO - Running scraper for NM
+2025-04-03 23:21:29,299 - rfp_scraper.new_mexico - INFO - Starting scrape of New Mexico procurement websites
+2025-04-03 23:21:29,299 - rfp_scraper.new_mexico - INFO - Scraping https://www.generalservices.state.nm.us/state-purchasing/active-itbs-and-rfps/active-procurements/
+2025-04-03 23:21:29,535 - rfp_scraper.new_mexico - WARNING - Could not find RFP table on GSD procurement page
+2025-04-03 23:21:29,536 - rfp_scraper.new_mexico - INFO - Scraping https://biz.nm.gov/procurement-opportunities/
+2025-04-03 23:21:29,946 - rfp_scraper.new_mexico - WARNING - Could not find opportunities on Biz.NM.gov page
+2025-04-03 23:21:29,947 - rfp_scraper.new_mexico - INFO - Scraping https://www.dot.nm.gov/business-support/procurement-services/request-for-proposals-rfp/
+2025-04-03 23:21:30,145 - rfp_scraper.new_mexico - WARNING - Could not find RFP listings on DOT procurement page
+2025-04-03 23:21:30,145 - rfp_scraper.new_mexico - INFO - Completed scrape of New Mexico, found 0 new RFPs
+2025-04-03 23:21:30,146 - rfp_scraper - INFO - Scraper for NM found 0 new RFPs
+2025-04-03 23:21:30,146 - rfp_scraper - INFO - Database connection closed
+2025-04-03 23:21:30,550 - rfp_scraper.keyword_filter - INFO - Initialized keyword filter with 8 keyword categories
+2025-04-03 23:21:30,960 - rfp_scraper.notification - INFO - Notification system initialized
